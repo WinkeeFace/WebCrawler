@@ -11,6 +11,7 @@ def debug_log(message):
 
 class SitemapManager:
     def __init__(self, base_url=None):
+        self.base_url = base_url
         self.visited_urls = set()
         self.unvisited_urls = []
         self.external_links = set()
@@ -57,6 +58,12 @@ class SitemapManager:
     def get_next_url(self):
         if self.unvisited_urls:
             logging.info(f"get_next_url() called, unvisited_urls before pop: {self.unvisited_urls}")  # Add logging statement
+            internal_urls = [url for url in self.unvisited_urls if url.startswith(self.base_url)]
+            if internal_urls:
+                next_url = internal_urls[0]
+                self.unvisited_urls.remove(next_url)
+                logging.info(f"get_next_url() called, unvisited_urls after pop: {self.unvisited_urls}")  # Add logging statement
+                return next_url
             next_url = self.unvisited_urls.pop()
             logging.info(f"get_next_url() called, unvisited_urls after pop: {self.unvisited_urls}")  # Add logging statement
             return next_url

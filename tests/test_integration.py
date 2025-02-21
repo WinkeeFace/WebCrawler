@@ -28,7 +28,11 @@ class TestIntegration(unittest.TestCase):
         # Check that the output folder and sitemap file exist.
         self.assertTrue(os.path.exists(domain_output), msg=f"Output directory {domain_output} not found.")
         self.assertTrue(os.path.exists(sitemap_file), msg="Sitemap file not created in the expected folder.")
-        
+
+        # Check that the all_docs.txt file exists in the output folder.
+        all_docs_file = os.path.join(domain_output, "all_docs.txt")
+        self.assertTrue(os.path.exists(all_docs_file), msg="all_docs.txt file not created in the expected folder.")
+
         # Optionally, check that there's at least one content file (.txt) in the output folder.
         txt_files = [f for f in os.listdir(domain_output) if f.endswith(".txt")]
         self.assertGreater(len(txt_files), 0, "No page content files found in the output folder.")

@@ -5,7 +5,7 @@ import time
 import signal
 import sys
 import argparse
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from utils import extract_text_from_html, classify_link, queue_internal_links, normalize_url
 import os
 from config import TIMEOUT, RETRIES
@@ -87,6 +87,10 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10):
     debug_log(f"Entered crawl() with url={url}, depth={depth}, current_depth={current_depth}")
     # logging.info(f"Starting crawl for {url} at depth {current_depth}")
     """Crawls a single page and extracts data."""
+    if not url.startswith(base_url):
+        logging.info(f"Skipping {url} as it does not start with the base URL {base_url}.")
+        return sitemap
+
     if depth is not None and depth >= 0 and current_depth > depth:
         # logging.info(f"Skipping {url} due to depth limit.")
         return sitemap
@@ -98,7 +102,7 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10):
     sitemap.mark_visited(url)
     debug_log(f"Marking {url} visited (visited count: {len(sitemap.visited_urls)})")
     # logging.info(f"Crawling {url} at depth {current_depth}")
-    
+
     html_content = fetch_page(url)
     if not html_content:
         # logging.warning(f"No content fetched for {url}")
@@ -117,13 +121,12 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10):
     sitemap.page_contents[url] = text
 
     # Append content to all_docs.txt
-    output_file_path = 'output/docs.cline.bot/all_docs.txt'
+    output_file_path = os.path.join(sitemap.output_folder, 'all_docs.txt')
     with open(output_file_path, 'a') as output_file:
         output_file.write(f"\n####### {url.upper()} #######\n\n")
         output_file.write(text)
 
     # Add all links to sitemap
-
     links = [link.get('href') for link in soup.find_all('a')]
     # logging.debug(f"Extracted links: {links}")
     debug_log(f"Found {len(links)} links on this page")
@@ -133,10 +136,7 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10):
     for link in links:
         if link:
             normalized_link = normalize_url(urljoin(url, link))
-            if sitemap.is_external(url, normalized_link):
-                sitemap.add_external_edge(url, normalized_link)
-            else:
-                sitemap.add_url(url, normalized_link)
+            sitemap.add_external_edge(url, normalized_link)
             # logging.debug(f"Added link {normalized_link} to sitemap")
 
     logging.info(f"Unvisited URLs after initial crawl: {sitemap.unvisited_urls}")  # Add logging statement

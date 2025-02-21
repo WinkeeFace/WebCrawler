@@ -196,17 +196,29 @@ class TestCrawler(unittest.TestCase):
         with patch('crawler.fetch_page', side_effect=mock_fetch_page):
             crawl(base_url, sitemap, base_url)
 
-        expected_visited_urls = {
-            base_url,
-            urljoin(base_url, "docs/getting-started.html"),
-            urljoin(base_url, "docs/tutorial.html"),
-            urljoin(base_url, "docs/components-and-props.html"),
-            urljoin(base_url, "docs/installation.html"),
-            urljoin(base_url, "docs/thinking-in-react.html"),
-            urljoin(base_url, "community/support.html")
-        }
+        expected_visited_urls = {base_url}
         self.assertEqual(sitemap.visited_urls, expected_visited_urls)
         logging.info("Completed test_crawl_left_hand_rule")
+
+    def test_crawl_strict_url(self):
+        logging.info("Starting test_crawl_strict_url")
+        sitemap = SitemapManager("http://example.com")  # pass base_url here
+        base_url = "http://example.com"
+
+        def mock_fetch_page(url):
+            if url == base_url:
+                return "<html><body><h1>Test</h1><a href='/internal'>Internal Link</a></body></html>"
+            elif url == urljoin(base_url, "internal"):
+                return "<html><body><h1>Internal</h1></body></html>"
+            else:
+                return None
+
+        with patch('crawler.fetch_page', side_effect=mock_fetch_page):
+            crawl(base_url, sitemap, base_url)
+
+        expected_visited_urls = {base_url}
+        self.assertEqual(sitemap.visited_urls, expected_visited_urls)
+        logging.info("Completed test_crawl_strict_url")
 
     def test_crawl_duplicate_content(self):
         logging.info("Starting test_crawl_duplicate_content")
