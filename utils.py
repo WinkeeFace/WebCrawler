@@ -1,6 +1,8 @@
 """Utility functions for web crawling and URL handling."""
 
 import logging
+import requests
+import time
 import os
 from urllib.parse import urlparse, urljoin
 import re
@@ -58,6 +60,95 @@ def save_content(url, text):
     except Exception as e:
         logging.error(f"Error saving content from {url}: {e}")
 
+
+# Robots.txt Handling
+class RobotsParser:
+    """Handles fetching and parsing of robots.txt files."""
+    
+    def __init__(self, base_url):
+        """Initialize with base URL and fetch robots.txt."""
+        self.base_url = base_url
+        self.robots_url = urljoin(base_url, '/robots.txt')
+        self.crawl_delay = 0  # Default no delay
+        self.rules = {'*': {'disallow': [], 'allow': []}}  # Default all allowed
+        self.last_request_time = 0
+        self.fetch_and_parse()
+    
+    def fetch_and_parse(self):
+        """Fetch and parse the robots.txt file."""
+        try:
+            response = requests.get(self.robots_url, timeout=10)
+            if response.status_code == 200:
+                self._parse_robots_txt(response.text)
+            else:
+                logging.warning(f"No robots.txt found at {self.robots_url}")
+        except Exception as e:
+            logging.error(f"Error fetching robots.txt: {e}")
+    
+    def _parse_robots_txt(self, content):
+        """Parse robots.txt content and extract rules."""
+        current_agent = '*'
+        for line in content.split('\n'):
+            line = line.strip().lower()
+            if not line or line.startswith('#'):
+                continue
+                
+            if line.startswith('user-agent:'):
+                current_agent = line.split(':', 1)[1].strip()
+                if current_agent not in self.rules:
+                    self.rules[current_agent] = {'disallow': [], 'allow': []}
+            elif line.startswith('disallow:'):
+                path = line.split(':', 1)[1].strip()
+                if path:
+                    self.rules[current_agent]['disallow'].append(path)
+            elif line.startswith('allow:'):
+                path = line.split(':', 1)[1].strip()
+                if path:
+                    self.rules[current_agent]['allow'].append(path)
+            elif line.startswith('crawl-delay:'):
+                try:
+                    delay = float(line.split(':', 1)[1].strip())
+                    self.crawl_delay = max(self.crawl_delay, delay)
+                except ValueError:
+                    pass
+
+    def is_allowed(self, url):
+        """Check if URL is allowed to be crawled based on robots.txt rules."""
+        path = urlparse(url).path
+        
+        # First check specific user-agent rules
+        for agent, rules in self.rules.items():
+            if agent == '*':
+                continue
+                
+            for allow in rules['allow']:
+                if path.startswith(allow):
+                    return True
+                    
+            for disallow in rules['disallow']:
+                if path.startswith(disallow):
+                    return False
+        
+        # Then check wildcard rules
+        if '*' in self.rules:
+            for allow in self.rules['*']['allow']:
+                if path.startswith(allow):
+                    return True
+                    
+            for disallow in self.rules['*']['disallow']:
+                if path.startswith(disallow):
+                    return False
+        
+        return True  # Default allow if no matching rules
+        
+    def respect_crawl_delay(self):
+        """Sleep if needed to respect crawl-delay."""
+        if self.crawl_delay > 0:
+            now = time.time()
+            time_since_last = now - self.last_request_time
+            if time_since_last < self.crawl_delay:
+                time.sleep(self.crawl_delay - time_since_last)
+            self.last_request_time = time.time()
 
 # URL Normalization
 def normalize_url(url, params_to_remove=['utm_source', 'session_id']):

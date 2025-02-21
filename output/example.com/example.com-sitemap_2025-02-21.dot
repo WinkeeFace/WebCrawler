@@ -7,16 +7,17 @@ digraph SiteMap {
 
     /* Declare unique nodes with clickable links */
     {
-        "https://example.com/" [URL="https://example.com/"];
+        "https://example.com/allowed" [URL="https://example.com/allowed"];
+        "https://example.com/test" [URL="https://example.com/test"];
     }
 
     /* Hierarchical Structure */
-    "https://example.com/" [fillcolor=lightblue];
+    "https://example.com/test" -> "https://example.com/allowed";
+    "https://example.com/test" [fillcolor=lightblue];
 
     /* Cross-Links to Show Page Interconnections */
     edge [color=red, style=dashed];
 
     /* External Links */
     node [fillcolor=gold];
-    "https://example.com/" -> "https://www.iana.org/domains/example" [URL="https://www.iana.org/domains/example", style=dotted, color=blue];
 }

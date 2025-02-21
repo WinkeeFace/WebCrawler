@@ -11,6 +11,7 @@ import logging
 import time
 import signal
 import sys
+from utils import extract_text_from_html, classify_link, queue_internal_links, normalize_url, RobotsParser
 import argparse
 from urllib.parse import urljoin, urlparse
 from utils import extract_text_from_html, classify_link, queue_internal_links, normalize_url
@@ -100,7 +101,7 @@ def parse_html(html):
     return BeautifulSoup(html, 'html.parser')
 
 
-def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10, output_format='txt'):
+def crawl(url, sitemap, base_url, robots_parser=None, depth=None, current_depth=0, max_pages=10, output_format='txt'):
     """Recursively crawls a website starting from the given URL.
     
     Args:
@@ -123,8 +124,15 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10, out
     os.makedirs(sitemap.output_folder, exist_ok=True)
     output_file_path = os.path.join(sitemap.output_folder, create_output_file_name(base_url, output_format))
     
+    if robots_parser is None:
+        robots_parser = RobotsParser(base_url)
+
     if not url.startswith(base_url):
         print(f"\rSkipping {url} - outside base URL {base_url}")
+        return sitemap
+
+    if not robots_parser.is_allowed(url):
+        print(f"\rSkipping {url} - disallowed by robots.txt")
         return sitemap
 
     if depth is not None and depth >= 0 and current_depth > depth:
@@ -136,6 +144,7 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10, out
     sitemap.mark_visited(url)
     print(f"\rCrawling: {url}")
     
+    robots_parser.respect_crawl_delay()
     html_content = fetch_page(url)
     if not html_content:
         print(f"\rFailed to fetch: {url}")
@@ -171,7 +180,7 @@ def crawl(url, sitemap, base_url, depth=None, current_depth=0, max_pages=10, out
     while sitemap.has_unvisited_urls() and (max_pages == -1 or len(sitemap.visited_urls) < max_pages):
         next_url = sitemap.get_next_url()
         if next_url:
-            crawl(next_url, sitemap, base_url, depth, current_depth + 1, max_pages)
+            crawl(next_url, sitemap, base_url, robots_parser, depth, current_depth + 1, max_pages)
         sitemap.update_sitemap_file()
         frame_index = 0
         animate_spinner(frame_index)
@@ -208,6 +217,7 @@ if __name__ == '__main__':
     max_pages = args.max_pages
     output_format = args.output_format
     sitemap = SitemapManager(start_url)
+    robots_parser = RobotsParser(start_url)
     sitemap.add_url(start_url, start_url)
 
     handler = logging.StreamHandler(sys.stdout)
@@ -222,7 +232,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        sitemap = crawl(start_url, sitemap, start_url, crawl_depth, 0, max_pages, output_format)
+        sitemap = crawl(start_url, sitemap, start_url, robots_parser, crawl_depth, 0, max_pages, output_format)
         # Write xlsx file at the end if that's the chosen format
         if output_format == 'xlsx':
             output_file_path = os.path.join(sitemap.output_folder, create_output_file_name(start_url, output_format))
