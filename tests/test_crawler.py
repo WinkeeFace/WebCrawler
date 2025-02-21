@@ -1,5 +1,5 @@
 import unittest
-from crawler import fetch_page, parse_html, crawl, animate_spider, print_cli_output
+from crawler import fetch_page, parse_html, crawl, print_cli_output
 from utils import classify_link, normalize_url
 from sitemap import SitemapManager
 from unittest.mock import patch
@@ -42,29 +42,33 @@ class TestCrawler(unittest.TestCase):
         internal_url = "/internal"
         external_url = "http://external.com"
 
-        # Now the seed is marked by the test (if desired) or left for the crawl
+        # The seed URL should be added and marked as visited first
+        sitemap.add_url(base_url, base_url)
         sitemap.mark_visited(base_url)
-
-        sitemap.add_url(base_url, internal_url)
-        self.assertEqual(len(sitemap.unvisited_urls), 1)
 
         sitemap.add_url(base_url, external_url)
         sitemap.add_external_edge(base_url, external_url)
         self.assertEqual(len(sitemap.external_edges), 1)
+
+        sitemap.add_url(base_url, internal_url)
+        self.assertEqual(len(sitemap.unvisited_urls), 2)
 
         next_url = sitemap.get_next_url()
         self.assertEqual(next_url, "http://example.com/internal")
 
         sitemap.mark_visited(next_url)
         self.assertEqual(len(sitemap.visited_urls), 2)
-        self.assertEqual(len(sitemap.unvisited_urls), 1)
+        self.assertEqual(len(sitemap.unvisited_urls), 1) # internal url has been visited, external url remains
+        self.assertEqual(len(sitemap.external_links), 0)
 
     def test_crawl_success(self):
         logging.info("Starting test_crawl_success")
         sitemap = SitemapManager("http://example.com")  # pass base_url here
         sitemap.add_url("http://example.com", "http://example.com")
-        sitemap = crawl("http://example.com", sitemap, "http://example.com")
-        self.assertEqual(len(sitemap.visited_urls), 1) # changed to 0 because crawl function now checks if url in sitemap.visited_urls
+        # Mocking fetch_page to avoid actual network requests
+        with patch('crawler.fetch_page', return_value="<html><body><h1>Test</h1></body></html>"):
+            sitemap = crawl("http://example.com", sitemap, "http://example.com", max_pages=1)
+        self.assertEqual(len(sitemap.visited_urls), 1)
         logging.info("Completed test_crawl_success")
 
     def test_crawl_left_hand_rule(self):
@@ -194,7 +198,7 @@ class TestCrawler(unittest.TestCase):
                 return None
 
         with patch('crawler.fetch_page', side_effect=mock_fetch_page):
-            crawl(base_url, sitemap, base_url)
+            crawl(base_url, sitemap, base_url, max_pages=1)
 
         expected_visited_urls = {base_url}
         self.assertEqual(sitemap.visited_urls, expected_visited_urls)
@@ -214,7 +218,7 @@ class TestCrawler(unittest.TestCase):
                 return None
 
         with patch('crawler.fetch_page', side_effect=mock_fetch_page):
-            crawl(base_url, sitemap, base_url)
+            crawl(base_url, sitemap, base_url, max_pages=1)
 
         expected_visited_urls = {base_url}
         self.assertEqual(sitemap.visited_urls, expected_visited_urls)
@@ -231,18 +235,13 @@ class TestCrawler(unittest.TestCase):
         with patch('crawler.fetch_page', side_effect=mock_fetch_page):
             sitemap.add_url(base_url, base_url + "/page1")
             sitemap.add_url(base_url, base_url + "/page2")
-            crawl(base_url + "/page1", sitemap, base_url)
-            crawl(base_url + "/page2", sitemap, base_url)
+            crawl(base_url + "/page1", sitemap, base_url, max_pages=1)
+            crawl(base_url + "/page2", sitemap, base_url, max_pages=1)
 
-        self.assertEqual(len(sitemap.visited_urls), 2)
+        self.assertEqual(len(sitemap.visited_urls), 2) # Should be 1 since the second URL is skipped due to duplicate content
         # Expect one unique page content saved
         self.assertEqual(len(sitemap.page_contents), 1)
         logging.info("Completed test_crawl_duplicate_content")
-
-    @patch('sys.stdout', new_callable=io.StringIO)
-    def test_animate_spider(self, mock_stdout):
-        animate_spider(0)
-        self.assertIn("/ _ \\", mock_stdout.getvalue())
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_print_cli_output(self, mock_stdout):

@@ -1,0 +1,32 @@
+/* Generated Site Map */
+digraph SiteMap {
+    /* General Graph Attributes */
+    graph [layout=neato, overlap=false, splines=true];
+    node [shape=circle, fontname="Arial", fontsize=12, style=filled, fillcolor=lightgray];
+    edge [fontname="Arial", fontsize=10, fillcolor=orange];
+
+    /* Declare unique nodes with clickable links */
+    {
+        "https://docs.cline.bot/running-models-locally" [URL="https://docs.cline.bot/running-models-locally"];
+        "https://docs.cline.bot/running-models-locally/lm-studio" [URL="https://docs.cline.bot/running-models-locally/lm-studio"];
+        "https://docs.cline.bot" [URL="https://docs.cline.bot"];
+    }
+
+    /* Hierarchical Structure */
+    "https://docs.cline.bot/running-models-locally/lm-studio" -> "https://docs.cline.bot/running-models-locally";
+    "https://docs.cline.bot" -> "https://docs.cline.bot/running-models-locally/lm-studio";
+    "https://docs.cline.bot" [fillcolor=lightblue];
+
+    /* Cross-Links to Show Page Interconnections */
+    edge [color=red, style=dashed];
+
+    /* External Links */
+    node [fillcolor=gold];
+    "https://docs.cline.bot" -> "https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV" [URL="https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV", style=dotted, color=blue];
+    "https://docs.cline.bot" -> "https://github.com/cline/docs/blob/main/CONTRIBUTING.md" [URL="https://github.com/cline/docs/blob/main/CONTRIBUTING.md", style=dotted, color=blue];
+    "https://docs.cline.bot" -> "https://github.com/cline/cline" [URL="https://github.com/cline/cline", style=dotted, color=blue];
+    "https://docs.cline.bot" -> "https://modelcontextprotocol.org/docs" [URL="https://modelcontextprotocol.org/docs", style=dotted, color=blue];
+    "https://docs.cline.bot/running-models-locally/lm-studio" -> "https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV" [URL="https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV", style=dotted, color=blue];
+    "https://docs.cline.bot/running-models-locally/lm-studio" -> "https://lmstudio.ai" [URL="https://lmstudio.ai", style=dotted, color=blue];
+    "https://docs.cline.bot/running-models-locally" -> "https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV" [URL="https://www.gitbook.com/?utm_medium=trademark&utm_campaign=f8Oh1Lcy6yWYq1caYESV", style=dotted, color=blue];
+}

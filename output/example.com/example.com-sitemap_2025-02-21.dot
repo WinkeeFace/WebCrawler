@@ -1,0 +1,22 @@
+/* Generated Site Map */
+digraph SiteMap {
+    /* General Graph Attributes */
+    graph [layout=neato, overlap=false, splines=true];
+    node [shape=circle, fontname="Arial", fontsize=12, style=filled, fillcolor=lightgray];
+    edge [fontname="Arial", fontsize=10, fillcolor=orange];
+
+    /* Declare unique nodes with clickable links */
+    {
+        "https://example.com/" [URL="https://example.com/"];
+    }
+
+    /* Hierarchical Structure */
+    "https://example.com/" [fillcolor=lightblue];
+
+    /* Cross-Links to Show Page Interconnections */
+    edge [color=red, style=dashed];
+
+    /* External Links */
+    node [fillcolor=gold];
+    "https://example.com/" -> "https://www.iana.org/domains/example" [URL="https://www.iana.org/domains/example", style=dotted, color=blue];
+}
